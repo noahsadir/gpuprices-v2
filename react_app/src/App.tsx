@@ -2,6 +2,10 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
+function fetchPrices(start: number, interval: number) {
+  // fetch prices
+}
+
 function App() {
   return (
     <div className="App">
