@@ -2,7 +2,7 @@
 
 Track the price of Nvidia GPUs
 
-![screenshot of gpu price tracker](http://github.com/noahsadir/gpuprices-v2/demo-img.png)
+![screenshot of gpu price tracker](https://github.com/noahsadir/gpuprices-v2/raw/master/demo-img.png)
 
 ## Background
 
