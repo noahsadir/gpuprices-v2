@@ -15,6 +15,30 @@
   --accent: darkred;
 }
 
+.back-button-visible {
+  display: none !important;
+}
+
+.back-button-hidden {
+  display: none !important;
+}
+
+.chart-visible {
+  display: flex !important;
+}
+
+.chart-hidden {
+  display: flex !important;
+}
+
+.list-visible {
+  display: flex !important;
+}
+
+.list-hidden {
+  display: flex !important;
+}
+
 html {
   background-color: var(--background);
 }
@@ -28,4 +52,30 @@ html {
 
 p {
   color: var(--text-primary);
+}
+
+@media screen and (max-width: 512px) {
+  .back-button-visible {
+    display: inline-block !important;
+  }
+  
+  .back-button-hidden {
+    display: none !important;
+  }
+
+  .chart-visible {
+    display: flex !important;
+  }
+  
+  .chart-hidden {
+    display: none !important;
+  }
+  
+  .list-visible {
+    display: flex !important;
+  }
+  
+  .list-hidden {
+    display: none !important;
+  }
 }

@@ -2,3 +2,4 @@ react-bootstrap bootstrap
 react-bootstrap-icons
 @fontsource/lato
 chart.js react-chartjs-2
+date-fns chartjs-adapter-date-fns

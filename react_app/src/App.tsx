@@ -11,23 +11,20 @@ import ToggleButtonGroup from 'react-bootstrap/ToggleButtonGroup';
 import ToggleButton from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
 
-import { Moon, MoonFill } from 'react-bootstrap-icons';
+import { ArrowLeftShort, Moon, MoonFill } from 'react-bootstrap-icons';
 
 import {
   Chart as ChartJS,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend,
+  registerables
 } from 'chart.js';
 import { Scatter } from 'react-chartjs-2';
+import 'chartjs-adapter-date-fns';
 
 var itemDisplayInfo: DisplayInfo  = require('./itemDisplayInfo.json');
 var data: PriceData = require('./testdata-daily.json');
 var granularData: PriceData = require('./testdata-daily.json');
 
-ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend);
+ChartJS.register(...registerables);
 
 interface DisplayInfo {
   [key: string]: DisplayInfoItem;
@@ -50,6 +47,7 @@ interface PriceDataItem {
 function App() {
   var [theme, setTheme]: [string, any] = React.useState("dark");
   var [didLoad, setDidLoad]: [boolean, any] = React.useState(false);
+  var [didSelect, setDidSelect]: [boolean, any] = React.useState(false);
   console.log(itemDisplayInfo);
 
   fetchPrices(0, 86400000, (priceData?: PriceData) => {
@@ -64,11 +62,19 @@ function App() {
     });
   });
 
+  const handleListSelect = () => {
+    setDidSelect(true);
+  }
+
+  const handleBackClick = (e: any) => {
+    setDidSelect(false);
+  }
+
   return (
     <div className="App" data-theme={theme} style={{display: 'flex', flexFlow: 'column'}}>
-      <Toolbar theme={theme} onThemeChange={(newTheme: string) => setTheme(newTheme)}/>
+      <Toolbar didSelect={didSelect} theme={theme} onBackClick={handleBackClick} onThemeChange={(newTheme: string) => setTheme(newTheme)}/>
       {didLoad ? (
-        <MainContent/>
+        <MainContent onListSelect={handleListSelect} didSelect={didSelect}/>
       ) : (
         <div style={{display: 'flex', flexGrow: 1, flexBasis: 0}}>
           <div style={{display: 'flex', flexGrow: 1}}></div>
@@ -92,7 +98,12 @@ function Toolbar(props: any) {
   return (
     <Navbar bg={props.theme} variant={props.theme} expand="lg" sticky="top" style={{flexGrow: 0}}>
       <Container fluid>
-        <Navbar.Brand style={{fontWeight: 600}}>GPU Price Tracker</Navbar.Brand>
+        <div>
+          <Button className={props.didSelect ? "back-button-visible" : "back-button-hidden"} variant={"primary"} style={{maxHeight: 40, maxWidth: 40, minHeight: 40, minWidth: 40, padding: 4, marginRight: 8}} onClick={props.onBackClick}>
+            <ArrowLeftShort size={32}/>
+          </Button>
+          <Navbar.Brand style={{fontWeight: 600, height: 40}}>GPU Price Tracker</Navbar.Brand>
+        </div>
         <div>
           <Button variant={(props.theme === "light") ? "outline-primary" : "primary"} style={{maxHeight: 40, maxWidth: 40, minHeight: 40, minWidth: 40, padding: 4, marginRight: 8}} onClick={(e: any) => props.onThemeChange((props.theme === "light") ? "dark" : "light")}>
             {(props.theme === "light") ? <Moon/> : <MoonFill/>}
@@ -118,6 +129,7 @@ function MainContent(props: any) {
   var changeColor: string = "#ff0000";
 
   const handleListClick = (event: any) => {
+    props.onListSelect();
     setSelectedListItem(event.currentTarget.value);
   };
 
@@ -191,9 +203,9 @@ function MainContent(props: any) {
         label: itemDisplayInfo[selectedListItem].name,
         showLine: true,
         data: prices,
-        backgroundColor: 'royalblue',
+        backgroundColor: changeColor,
         pointRadius: 1,
-        borderColor: 'royalblue',
+        borderColor: changeColor,
         fill: false,
       }
     ]
@@ -203,19 +215,24 @@ function MainContent(props: any) {
     responsive: true,
     maintainAspectRatio: false,
     scales: {
-
+      x: {
+        type: 'time' as const,
+        time: {
+          unit: 'month' as const
+        }
+      }
     },
   };
 
   return (
     <div style={{display: 'flex', flexGrow: 1, flexBasis: 0}}>
-      <div style={{flexGrow: 1, flexBasis: 1, display: 'flex', flexFlow: 'column'}}>
+      <div className={props.didSelect ? "list-hidden" : "list-visible"} style={{flexGrow: 1, flexBasis: 1, display: 'flex', flexFlow: 'column'}}>
         <ListGroup style={{flexGrow: 1, flexBasis: 1, overflow: 'scroll', borderRadius: 0, padding: 8}}>
           {listItems}
         </ListGroup>
         <div style={{flexGrow: 0, flexBasis: 0}}/>
       </div>
-      <div style={{flexGrow: 3, flexBasis: 3, display: 'flex', flexFlow: "column"}}>
+      <div className={props.didSelect ? "list-visible" : "list-hidden"} style={{flexGrow: 3, flexBasis: 3, display: 'flex', flexFlow: "column"}}>
         <div style={{display: 'flex', flexFlow: "column", margin: 0, padding: 8}}>
           <p style={{fontSize: 28, fontWeight: 800, margin: 0, padding: 0}}>{itemDisplayInfo[selectedListItem].name}</p>
           <p style={{fontSize: 32, fontWeight: 800, margin: 0, padding: 0}}>{"$" + (latestPrice == undefined ? 0 : latestPrice).toFixed(2)}</p>
