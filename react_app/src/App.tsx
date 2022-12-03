@@ -44,6 +44,20 @@ interface PriceDataItem {
   [key: string]: number; // key = gpu, value = price
 }
 
+interface ChartPoint {
+  x: number;
+  y: number;
+}
+
+interface DataSummary {
+  low: number;
+  high: number;
+  earliest: number;
+  latest: number;
+  change: number;
+  change_percent: number;
+}
+
 function App() {
   var [theme, setTheme]: [string, any] = React.useState("dark");
   var [didLoad, setDidLoad]: [boolean, any] = React.useState(false);
@@ -122,11 +136,34 @@ function MainContent(props: any) {
   var [selectedListItem, setSelectedListItem]: [string, any] = React.useState("gtx 1050");
   var [dayCount, setDayCount] = React.useState(365);
 
-  var latestPrice: number | undefined = undefined;
-  var earliestPrice: number | undefined = undefined;
-  var change: number = 1;
   var changeString: string = "+$0.00 (0.00%)";
   var changeColor: string = "#ff0000";
+
+  var prices: ChartPoint[] = [];
+  var priceDataset: PriceData = data;
+  var priceSummary: DataSummary = {
+    low: Infinity,
+    high: 0,
+    earliest: 0,
+    latest: 0,
+    change: 0,
+    change_percent: 0
+  };
+
+  if (dayCount <= 30) {
+    priceDataset = granularData;
+  }
+  
+  prices = getMovingAverage(formatPriceData(priceDataset, selectedListItem, dayCount), 5);
+  priceSummary = getPriceSummary(prices);
+
+  if (priceSummary.change >= 0) {
+    changeString = "+$" + priceSummary.change.toFixed(2) + " (+" + (priceSummary.change_percent * 100).toFixed(2) + "%)";
+    changeColor = "#28a745";
+  } else {
+    changeString = "-$" + Math.abs(priceSummary.change).toFixed(2) + " (-" + (priceSummary.change_percent * 100).toFixed(2) + "%)";
+    changeColor = "#dc3545";
+  }
 
   const handleListClick = (event: any) => {
     props.onListSelect();
@@ -168,35 +205,6 @@ function MainContent(props: any) {
     );
   }
 
-  var prices: any[] = [];
-  var priceDataset: PriceData = data;
-  if (dayCount <= 30) {
-    priceDataset = granularData;
-  }
-  for (var dateMillis in priceDataset) {
-    if (Number(dateMillis) >= (Date.now() - (86400000 * dayCount))) {
-      if (earliestPrice == undefined) {
-        earliestPrice = priceDataset[dateMillis][selectedListItem];
-      }
-      prices.push({
-        x: Number(dateMillis),
-        y: priceDataset[dateMillis][selectedListItem]
-      });
-      latestPrice = priceDataset[dateMillis][selectedListItem];
-    }
-  }
-
-  if (earliestPrice != undefined && latestPrice != undefined) {
-    change = latestPrice - earliestPrice;
-    if (change >= 0) {
-      changeString = "+$" + change.toFixed(2) + " (+" + (((latestPrice / earliestPrice) - 1) * 100).toFixed(2) + "%)";
-      changeColor = "#28a745";
-    } else {
-      changeString = "-$" + Math.abs(change).toFixed(2) + " (-" + ((1 - (latestPrice / earliestPrice)) * 100).toFixed(2) + "%)";
-      changeColor = "#dc3545";
-    }
-  }
-
   var formattedData = {
     datasets: [
       {
@@ -235,8 +243,8 @@ function MainContent(props: any) {
       <div className={props.didSelect ? "list-visible" : "list-hidden"} style={{flexGrow: 3, flexBasis: 3, display: 'flex', flexFlow: "column"}}>
         <div style={{display: 'flex', flexFlow: "column", margin: 0, padding: 8}}>
           <p style={{fontSize: 28, fontWeight: 800, margin: 0, padding: 0}}>{itemDisplayInfo[selectedListItem].name}</p>
-          <p style={{fontSize: 32, fontWeight: 800, margin: 0, padding: 0}}>{"$" + (latestPrice == undefined ? 0 : latestPrice).toFixed(2)}</p>
-          <p style={{fontSize: 16, fontWeight: 800, margin: 0, padding: 0, color: changeColor}}>{changeString}</p>
+          <p style={{fontSize: 32, margin: 0, padding: 0}}>{"$" + (priceSummary.latest == undefined ? 0 : priceSummary.latest).toFixed(2)}</p>
+          <p style={{fontSize: 16, margin: 0, padding: 0, color: changeColor}}>{changeString}</p>
         </div>
         <div style={{flexGrow: 1, flexBasis: 1, display: 'flex'}}>
           <div style={{flex: "1 0 0", display: "flex", flexFlow: "column"}}>
@@ -291,6 +299,85 @@ function SelectButton(props: any) {
         {props.text}
       </Button>
   );
+}
+
+function getPriceSummary(points: ChartPoint[]) {
+  var result: DataSummary = {
+    low: Infinity,
+    high: 0,
+    earliest: 0,
+    latest: 0,
+    change: 0,
+    change_percent: 0
+  };
+
+  if (points.length > 0) {
+    result.earliest = points[0].y;
+    result.latest = points[points.length - 1].y;
+    result.change = result.latest - result.earliest;
+    if (result.change > 0) {
+      result.change_percent = (result.latest / result.earliest) - 1;
+    } else if (result.change < 0) {
+      result.change_percent = 1 - (result.latest / result.earliest);
+    } else {
+      result.change_percent = 0;
+    }
+  }
+
+  for (var point of points) {
+    if (point.y < result.low) {
+      result.low = point.y;
+    }
+    if (point.y > result.high) {
+      result.high = point.y;
+    }
+  }
+
+  return result;
+}
+
+function getMovingAverage(points: ChartPoint[], avgCount: number) {
+  var movingArray: ChartPoint[] = [];
+  var result: ChartPoint[] = [];
+  
+  // populate & rotate moving array
+  for (var point of points) {
+    movingArray.push(point);
+    if (movingArray.length > avgCount) {
+      movingArray.shift();
+    }
+
+    // get moving average at each point
+    if (movingArray.length == avgCount) {
+      var newPoint: ChartPoint = {
+        x: movingArray[avgCount - 1].x,
+        y: 0
+      }
+
+      for (var point of movingArray) {
+        newPoint.y += point.y;
+      }
+      newPoint.y /= avgCount;
+      result.push(newPoint);
+    }
+  }
+  
+  return result;
+}
+
+function formatPriceData(priceDataset: PriceData, selectedListItem: string, dayCount: number) {
+  var prices: any = [];
+  for (var dateMillis in priceDataset) {
+    if (Number(dateMillis) >= (Date.now() - (86400000 * dayCount))) {
+      
+      prices.push({
+        x: Number(dateMillis),
+        y: priceDataset[dateMillis][selectedListItem]
+      });
+      
+    }
+  }
+  return prices;
 }
 
 function fetchPrices(start: number, interval: number, callback: (priceData?: PriceData) => void) {
