@@ -2,6 +2,8 @@
 
 Track the price of Nvidia GPUs
 
+![screenshot of gpu price tracker](http://github.com/noahsadir/gpuprices-v2/demo-img.png)
+
 ## Background
 
 This tool was initially created to track the price of Nvidia cards during the price spike in 2020/21.
