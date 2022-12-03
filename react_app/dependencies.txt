@@ -1,2 +1,4 @@
-react-bootstrap
+react-bootstrap bootstrap
+react-bootstrap-icons
 @fontsource/lato
+chart.js react-chartjs-2

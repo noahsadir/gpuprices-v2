@@ -1,6 +1,7 @@
 <?php
+$folder = '../../gpu_prices';
 //Location of prices list
-$pricesList = scandir('../../gpu_prices/prices/');
+$pricesList = scandir($folder.'/prices/');
 
 $fromTime = $_GET['from'];
 $interval = $_GET['interval'];
@@ -37,7 +38,7 @@ foreach ($pricesList as $priceFile){
       if ($lastTime + $interval <= $timeValue && $timeValue >= $fromTime) {
 
         //Get contents of JSON file
-        $priceJson = file_get_contents('../../../gpu_prices/prices/'.$priceFile);
+        $priceJson = file_get_contents($folder.'/prices/'.$priceFile);
 
         //Remove enclosing brackets
         $priceJson = substr($priceJson, 1, -1);
