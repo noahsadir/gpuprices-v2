@@ -10,6 +10,7 @@ import ListGroup from 'react-bootstrap/ListGroup';
 import ToggleButtonGroup from 'react-bootstrap/ToggleButtonGroup';
 import ToggleButton from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
+import Card from 'react-bootstrap/Card';
 
 import { Check, ArrowLeftShort, Moon, MoonFill } from 'react-bootstrap-icons';
 
@@ -88,7 +89,7 @@ function App() {
     <div className="App" data-theme={theme} style={{display: 'flex', flexFlow: 'column'}}>
       <Toolbar didSelect={didSelect} theme={theme} onBackClick={handleBackClick} onThemeChange={(newTheme: string) => setTheme(newTheme)}/>
       {didLoad ? (
-        <MainContent onListSelect={handleListSelect} didSelect={didSelect}/>
+        <MainContent theme={theme} onListSelect={handleListSelect} didSelect={didSelect}/>
       ) : (
         <div style={{display: 'flex', flexGrow: 1, flexBasis: 0}}>
           <div style={{display: 'flex', flexGrow: 1}}></div>
@@ -155,7 +156,7 @@ function MainContent(props: any) {
     priceDataset = granularData;
   }
   
-  prices = getMovingAverage(formatPriceData(priceDataset, selectedListItem, dayCount, 86400000, approximateMissing), 12);
+  prices = getMovingAverage(formatPriceData(priceDataset, selectedListItem, dayCount, (dayCount <= 30 ? 3600000 : 86400000), approximateMissing), 12);
   priceSummary = getPriceSummary(prices);
 
   if (priceSummary.change >= 0) {
@@ -256,7 +257,6 @@ function MainContent(props: any) {
             </Button>
             <div style={{flexGrow: 1}}></div>
           </div>
-          
         </div>
         <div style={{flexGrow: 1, flexBasis: 1, display: 'flex'}}>
           <div style={{flex: "1 0 0", display: "flex", flexFlow: "column"}}>
@@ -273,6 +273,29 @@ function MainContent(props: any) {
             <div style={{flex: "1 0 0"}}/>
           </div>
           <div style={{flex: "1 0 0"}}/>
+        </div>
+        <div style={{display: 'flex', flexGrow: 0, margin: 8}}>
+          <Card style={{flexGrow: 1}} bg={props.theme} border={props.theme} text={(props.theme == "light") ? "dark" : "light"}>
+            <Card.Body>
+              <Card.Title style={{fontWeight: 800}}>{(dayCount == 3650) ? "All Time Stats" : (dayCount + "D Stats")}</Card.Title>
+              <Card.Text>
+                <p style={{margin: 0, padding: 4, paddingLeft: 0}}>{"High: $" + priceSummary.high.toFixed(2)}</p>
+                <p style={{margin: 0, padding: 4, paddingLeft: 0}}>{"Low: $" + priceSummary.low.toFixed(2)}</p>
+                <p style={{margin: 0, padding: 4, paddingLeft: 0}}>{"Highest Markup: " + (((priceSummary.high / itemDisplayInfo[selectedListItem].msrp) - 1) * 100).toFixed(2) + "%"}</p>
+              </Card.Text>
+            </Card.Body>
+          </Card>
+          <div style={{margin: 0, padding: 0, width: 8, flexGrow: 0}}></div>
+          <Card style={{flexGrow: 1}} bg={props.theme} border={props.theme} text={(props.theme == "light") ? "dark" : "light"}>
+            <Card.Body>
+              <Card.Title style={{fontWeight: 800}}>GPU Info</Card.Title>
+              <Card.Text>
+                <p style={{margin: 0, padding: 4, paddingLeft: 0}}>{"Company: " + itemDisplayInfo[selectedListItem].company.toUpperCase()}</p>
+                <p style={{margin: 0, padding: 4, paddingLeft: 0}}>{"MSRP: $" + itemDisplayInfo[selectedListItem].msrp.toFixed(2)}</p>
+                <p style={{margin: 0, padding: 4, paddingLeft: 0}}>{"Current Markup: " + (((priceSummary.latest / itemDisplayInfo[selectedListItem].msrp) - 1) * 100).toFixed(2) + "%"}</p>
+              </Card.Text>
+            </Card.Body>
+          </Card>
         </div>
         <div style={{display: 'flex', margin: 8}}>
           <div style={{flexGrow: 1, flexBasis: 0}}></div>
