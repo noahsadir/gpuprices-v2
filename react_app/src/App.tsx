@@ -11,7 +11,7 @@ import ToggleButtonGroup from 'react-bootstrap/ToggleButtonGroup';
 import ToggleButton from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
 
-import { ArrowLeftShort, Moon, MoonFill } from 'react-bootstrap-icons';
+import { Check, ArrowLeftShort, Moon, MoonFill } from 'react-bootstrap-icons';
 
 import {
   Chart as ChartJS,
@@ -64,7 +64,7 @@ function App() {
   var [didSelect, setDidSelect]: [boolean, any] = React.useState(false);
   console.log(itemDisplayInfo);
 
-  fetchPrices(0, 86400000, (priceData?: PriceData) => {
+  fetchPrices(0, 21600000, (priceData?: PriceData) => {
     if (priceData != undefined) {
       data = priceData;
     }
@@ -134,7 +134,8 @@ function Toolbar(props: any) {
 function MainContent(props: any) {
   var listItems: any[] = [];
   var [selectedListItem, setSelectedListItem]: [string, any] = React.useState("gtx 1050");
-  var [dayCount, setDayCount] = React.useState(365);
+  var [dayCount, setDayCount]: [number, any] = React.useState(365);
+  var [approximateMissing, setApproximateMissing]: [boolean, any] = React.useState(true);
 
   var changeString: string = "+$0.00 (0.00%)";
   var changeColor: string = "#ff0000";
@@ -154,7 +155,7 @@ function MainContent(props: any) {
     priceDataset = granularData;
   }
   
-  prices = getMovingAverage(formatPriceData(priceDataset, selectedListItem, dayCount), 5);
+  prices = getMovingAverage(formatPriceData(priceDataset, selectedListItem, dayCount, 86400000, approximateMissing), 12);
   priceSummary = getPriceSummary(prices);
 
   if (priceSummary.change >= 0) {
@@ -222,6 +223,9 @@ function MainContent(props: any) {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 0
+    },
     scales: {
       x: {
         type: 'time' as const,
@@ -245,6 +249,14 @@ function MainContent(props: any) {
           <p style={{fontSize: 28, fontWeight: 800, margin: 0, padding: 0}}>{itemDisplayInfo[selectedListItem].name}</p>
           <p style={{fontSize: 32, margin: 0, padding: 0}}>{"$" + (priceSummary.latest == undefined ? 0 : priceSummary.latest).toFixed(2)}</p>
           <p style={{fontSize: 16, margin: 0, padding: 0, color: changeColor}}>{changeString}</p>
+          <div style={{display: 'flex', padding: 8}}>
+            <div style={{flexGrow: 1}}></div>
+            <Button variant={approximateMissing ? "primary" : "outline-primary"} style={{maxWidth: 256, flexGrow: 1, height: 40}} onClick={(e: any) => setApproximateMissing(!approximateMissing)}>
+              <Check style={{display: (approximateMissing ? 'inline-block' : 'none'), width: 24, height: 24}}/> Approximate missing data
+            </Button>
+            <div style={{flexGrow: 1}}></div>
+          </div>
+          
         </div>
         <div style={{flexGrow: 1, flexBasis: 1, display: 'flex'}}>
           <div style={{flex: "1 0 0", display: "flex", flexFlow: "column"}}>
@@ -365,16 +377,35 @@ function getMovingAverage(points: ChartPoint[], avgCount: number) {
   return result;
 }
 
-function formatPriceData(priceDataset: PriceData, selectedListItem: string, dayCount: number) {
+function formatPriceData(priceDataset: PriceData, selectedListItem: string, dayCount: number, interval: number, approximateMissing: boolean) {
   var prices: any = [];
+  var previous: number = 0;
+  var prevPrice: number = 0;
   for (var dateMillis in priceDataset) {
     if (Number(dateMillis) >= (Date.now() - (86400000 * dayCount))) {
-      
+
+      // Generate approximate values for missing data
+      if (approximateMissing && previous != 0 && Number(dateMillis) - previous > (interval * 2)) {
+        console.log("Found " + ((Number(dateMillis) - previous) * 60000) + " min gap");
+        var priceDiff = priceDataset[dateMillis][selectedListItem] - prevPrice;
+        var intervalsMissed = Math.floor((Number(dateMillis) - previous) / interval);
+        priceDiff /= intervalsMissed;
+        for (var i = 0; i < intervalsMissed; i++) {
+          var randomNoise: number = getRandomInt(Math.abs((priceDiff / 2) * intervalsMissed) * -1, Math.abs((priceDiff / 2) * intervalsMissed));
+          prices.push({
+            x: previous + (interval * i),
+            y: prevPrice + (priceDiff * i) + randomNoise
+          });
+        }
+      }
+
       prices.push({
         x: Number(dateMillis),
         y: priceDataset[dateMillis][selectedListItem]
       });
       
+      previous = Number(dateMillis);
+      prevPrice = priceDataset[dateMillis][selectedListItem];
     }
   }
   return prices;
@@ -408,6 +439,12 @@ function fetchPrices(start: number, interval: number, callback: (priceData?: Pri
   .catch((error: any) => {
     callback(undefined);
   });
+}
+
+function getRandomInt(min: number, max: number) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
 }
 
 export default App;

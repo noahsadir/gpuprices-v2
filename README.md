@@ -1,4 +1,4 @@
-# GPU Price Tracker
+# Nvidia GPU Price Tracker
 
 Track the price of Nvidia GPUs
 
