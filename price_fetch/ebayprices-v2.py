@@ -1,6 +1,6 @@
 ## ebayprices-v2.py
 ##
-## Created by Noah Sadir on 11 Nov 2023
+## Created by Noah Sadir on 14 Nov 2023
 ##
 ## Estimate market value of items based on eBay auctions.
 ##
