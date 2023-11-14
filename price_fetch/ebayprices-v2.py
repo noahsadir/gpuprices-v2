@@ -203,10 +203,10 @@ def getCurrentTimeString() -> str:
 # Start routine for scanning at regular intervals
 def beginScheduledScans(items: [str], interval: int, path: str, testMode: bool):
     lastScanTime: str = "N/A"
-    scanCount = 0
-    success = 0
-    failure = 0
-    lastSucceded = None
+    scanCount: int = 0
+    success: int = 0
+    failure: int = 0
+    lastSucceded: bool = None
     while True:
         # print scan metrics
         clearScreen()
@@ -223,7 +223,7 @@ def beginScheduledScans(items: [str], interval: int, path: str, testMode: bool):
         time.sleep(1)
         # attempt to scan
         scanStartTime: str = getCurrentTimeString()
-        scanStat = scan(items, interval, testMode)
+        scanStat: int = scan(items, interval, testMode)
         if scanStat == 0: continue # not time to scan yet
         # scan was performed; log metrics
         lastScanTime = scanStartTime
